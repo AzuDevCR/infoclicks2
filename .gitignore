@@ -1,0 +1,51 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# --- Entornos virtuales ---
+venv/
+.env/
+env/
+.venv/
+
+# --- Archivos temporales ---
+*.log
+*.tmp
+*.temp
+
+# --- Archivos de datos de ejecución ---
+# Ignorar JSON e imágenes generadas automáticamente, pero no las de assets
+*.json
+*.jpg
+*.png
+*.svg
+*.gif
+*.mp3
+!assets/*.jpg
+!assets/*.png
+!assets/*.svg
+!assets/*.gif
+!assets/*.mp3
+!assets/*.wav
+
+# --- Matplotlib, cache, etc. ---
+.matplotlib/
+ipython_config.py
+
+# --- PyInstaller / AppImage ---
+/build/
+/dist/
+/*.spec
+*.AppImage
+
+# --- Archivos específicos de InfoClicks ---
+/warn-InfoClicks.txt
+/xref-InfoClicks.html
+/base_library.zip
+
+# --- Sistema ---
+.DS_Store
+Thumbs.db

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=InfoClicks
+Exec=usr/bin/InfoClicks
+Icon=icon
+Categories=Utility;
+Terminal=false
