@@ -1,4 +1,4 @@
-__version__ = '2.3.0'
+__version__ = '2.3.1'
 __author__ = 'AzuDevCR'
 
 
@@ -30,6 +30,7 @@ def getPath(relPath):
 keyCount = defaultdict(int)
 pressedKeys = set()
 enterText = False
+EXIT_FLAG = "exit.flag"
 
 #keys for internal functionalities, not to be logged
 utilityKeys = [Key.home, Key.pause, Key.insert]
@@ -94,8 +95,10 @@ def onKeyPress(key):
         resetData()
     
     if key == Key.pause:
-        print("<3")
-        os._exit(0)
+        with open(EXIT_FLAG, "w") as f:
+            f.write("bye")
+        saveCountsToJson()
+        return
 
     keyStr = cleanKeyName(key)
 

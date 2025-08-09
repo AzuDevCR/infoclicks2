@@ -1,6 +1,7 @@
-__version__ = '2.3.0'
+__version__ = '2.3.1'
 
 import os, sys
+import time, shutil
 import json
 from json.decoder import JSONDecodeError
 import matplotlib
@@ -26,6 +27,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib import cm
 from matplotlib.colors import Normalize
 from matplotlib.image import imread
+from matplotlib.ticker import FuncFormatter
 
 def getPath(relPath):
     if getattr(sys, 'frozen', False):
@@ -38,6 +40,10 @@ def getPath(relPath):
 # img_artist = ax.imshow(bgImg, extent=img_extent, aspect='auto', zorder=0)
 
 def startVisualizer():
+    SESS_DIR = "sessions"
+    os.makedirs(SESS_DIR, exist_ok=True)
+    EXIT_FLAG = "exit.flag"
+
     fig, ax = plt.subplots(figsize=(10, 6))
     imgBCK = imread(getPath("bck.jpg"))
 
@@ -45,6 +51,28 @@ def startVisualizer():
     fig.figimage(imgBCK, xo=0, yo=0, alpha=0.3, zorder=0)
     
     bars = ax.bar([], [], alpha=0.8, edgecolor="white", linewidth=1.2, width=0.5)
+
+    def saveSessionSnapshot():
+        ts = time.strftime("%Y%m%d-%H%M%S")
+        pngPath = os.path.join(SESS_DIR, f"InfoClicks-{ts}.png")
+        jsonSrc = "infoClicks.json"
+        jsonDst = os.path.join(SESS_DIR, f"InfoClicks-{ts}.json")
+
+        if os.path.exists(jsonSrc):
+            try:
+                shutil.copy(jsonSrc, jsonDst)
+            except Exception:
+                pass
+
+        try:
+            fig.savefig(pngPath, dpi=150, bbox_inches='tight')
+        except Exception:
+            pass
+
+    def _on_close(event):
+        saveSessionSnapshot()
+
+    fig.canvas.mpl_connect('close_event', _on_close)
 
     def update(frame):
         ax.clear()
@@ -69,29 +97,61 @@ def startVisualizer():
         keys = list(all_counts.keys())
         values = list(all_counts.values())
 
+        def fmtKM(x, pos=None):
+            if abs(x) >= 1_000_000:
+                return f"{x/1_000_000:.1f}k"
+            elif abs(x) >= 1_000:
+                return f"{x/1_000:.1f}k"
+            else:
+                return str(int(x))
+            
+        ax.yaxis.set_major_formatter(FuncFormatter(fmtKM))
+
         norm = Normalize(vmin=0, vmax=max(values))
         cmap = cm.get_cmap('inferno')
 
         colors = [cmap(norm(v)) for v in values]
         bars = ax.bar(keys, values, color=colors, edgecolor='white', linewidth=1.2)
 
-        for bar, key, val in zip(bars, keys, values):
-            height = bar.get_height()
+        total = sum(values)
+        # for bar, key, val in zip(bars, keys, values):
+        #     height = bar.get_height()
+        #     ax.text(
+        #         bar.get_x() + bar.get_width() / 2,
+        #         height + 0.5,
+        #         f'{val}',
+        #         ha='center', va='bottom',
+        #         fontsize=12,
+        #         color='white',
+        #         rotation=30 if len(keys) > 15 else 0
+        #     )
+
+        for bar, val in zip(bars, values):
+            if total > 0 and (val / total) < 0.02:
+                continue  # Ocultar barras < 2% del total
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
-                height + 0.5,
-                f'{val}',
+                bar.get_height() + 0.5,
+                fmtKM(val),  # usamos abreviado
                 ha='center', va='bottom',
-                fontsize=12,
-                color='white',
+                fontsize=10, color='white',
                 rotation=30 if len(keys) > 15 else 0
-            )
+    )
 
         # Este paso sincroniza los ticks con las etiquetas
         ax.set_xticks(range(len(keys)))
         ax.set_xticklabels(keys, rotation=45, ha='right', color='white')
 
         ax.set_ylim(0, max(values) + 5)
+
+        if os.path.exists(EXIT_FLAG):
+            saveSessionSnapshot()
+            try:
+                os.remove(EXIT_FLAG)
+            except FileExistsError:
+                pass
+            plt.close(fig)
+            return
 
         return bars
 
